@@ -3,7 +3,7 @@
 #include "ImageExtractor.h"
 
 #ifdef _MSC_VER
-#define snprintf _snprintf
+#define snprintf _snprintf_s
 #endif
 
 ImageExtractor::ImageExtractor()
@@ -77,7 +77,7 @@ void ImageExtractor::ExtractImage( PdfObject* pObject, bool bJpeg )
         snprintf( m_szBuffer, MAX_PATH, "%s/pdfimage_%04i.%s", m_pszOutputDirectory, m_nCount++, pszExtension );
     } while( FileExists( m_szBuffer ) );
 
-    hFile = fopen( m_szBuffer, "wb" );
+    hFile = fopen( m_szBuffer, "wb" );  
     if( !hFile )
     {
         PODOFO_RAISE_ERROR( ePdfError_InvalidHandle );
