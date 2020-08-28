@@ -1,1 +1,1 @@
-..\load-libraries.cmd x86 release
+..\_load-libraries.cmd x86 release

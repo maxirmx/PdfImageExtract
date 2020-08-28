@@ -1,1 +1,1 @@
-..\load-libraries.cmd X64 release
+..\_load-libraries.cmd X64 release
