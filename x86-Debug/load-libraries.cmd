@@ -1,1 +1,1 @@
-..\_load-libraries.cmd x86 debug 
+cmd /c %~dp0\..\Tools\_load-libraries.cmd x86 debug 
