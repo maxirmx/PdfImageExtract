@@ -75,7 +75,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\..\$(platform)-$(configuration)\podofo\include\podofo\;$(SolutionDir)\..\$(platform)-$(configuration)\podofo\include\</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)\..\$(platform)-$(configuration)\podofo\lib64\;$(SolutionDir)\..\$(platform)-$(configuration)\freetype\lib\;$(SolutionDir)\..\$(platform)-$(configuration)\libpng\lib\;$(SolutionDir)\..\$(platform)-$(configuration)\libjpeg\lib\;$(SolutionDir)\..\$(platform)-$(configuration)\zlib\lib\</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)\..\$(platform)-$(configuration)\podofo\lib\;$(SolutionDir)\..\$(platform)-$(configuration)\freetype\lib\;$(SolutionDir)\..\$(platform)-$(configuration)\libpng\lib\;$(SolutionDir)\..\$(platform)-$(configuration)\libjpeg\lib\;$(SolutionDir)\..\$(platform)-$(configuration)\zlib\lib\</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
