@@ -67,6 +67,60 @@ void ImageExtractor::Init( const char* pszInput, const char* pszOutput, int* pnN
     }
 }
 
+
+void ImageExtractor::Extract(const char* pszInput, const char* pszOutput)
+{
+
+	if (!pszInput || !pszOutput)
+	{
+		PODOFO_RAISE_ERROR(ePdfError_InvalidHandle);
+	}
+
+	m_pszOutputDirectory = const_cast<char*>(pszOutput);
+
+
+	PdfMemDocument document(pszInput);
+	int nPages = document.GetPageCount();
+
+	for (int i = 0; i < nPages; i++) {
+		PdfObject* pObj = document.GetPage(i)->GetContents();
+		printf("-> Page #%i", i);
+		if (pObj) {
+			if (pObj->IsDictionary()) {
+				printf(" ... pObj is Dictionary");
+				PdfObject* pFilterObj = pObj->GetIndirectKey(PdfName::KeyFilter);
+
+				if (pFilterObj && pFilterObj->IsArray() && pFilterObj->GetArray().GetSize() == 1 &&
+						pFilterObj->GetArray()[0].IsName() && (pFilterObj->GetArray()[0].GetName().GetName() == "DCTDecode"))
+						pFilterObj = &pFilterObj->GetArray()[0];
+
+				if (pFilterObj && pFilterObj->IsName() && (pFilterObj->GetName().GetName() == "DCTDecode"))
+				{
+						// The only filter is JPEG -> create a JPEG file
+						printf(" ... JPEG");
+						ExtractImage(pFilterObj, true);
+				}
+				else
+				{
+						printf(" ... хрень");
+						ExtractImage(pFilterObj, false);
+				}
+
+			}
+
+//				PdfObject* pObjType = (*it)->GetDictionary().GetKey(PdfName::KeyType);
+//				PdfObject* pObjSubType = (*it)->GetDictionary().GetKey(PdfName::KeySubtype);
+
+			} else {
+				printf(" ... pObj is not Dictionary");
+		}
+		printf("\n");
+	}
+
+}
+
+
+
 void ImageExtractor::ExtractImage( PdfObject* pObject, bool bJpeg )
 {
     FILE*       hFile        = NULL;

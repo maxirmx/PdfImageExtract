@@ -43,7 +43,8 @@ int main( int argc, char* argv[] )
   }
 
   try {
-      extractor.Init( pszInput, pszOutput, &nNum );
+  //    extractor.Init( pszInput, pszOutput, &nNum );
+	  extractor.Extract(pszInput, pszOutput);
   } catch( PdfError & e ) {
       fprintf( stderr, "Error: An error %i ocurred during processing the pdf file.\n", e.GetError() );
       e.PrintErrorMsg();

@@ -43,6 +43,8 @@ class ImageExtractor {
      */
     void Init( const char* pszInput, const char* pszOutput, int* pnNum = NULL );
 
+	void Extract(const char * pszInput, const char * pszOutput);
+
     /**
      * \returns the number of succesfully extracted images
      */
@@ -55,7 +57,7 @@ class ImageExtractor {
      *  \param bJpeg if true extract as a jpeg, otherwise create a ppm
      *  \returns ErrOk on success
      */
-    void ExtractImage( PoDoFo::PdfObject* pObject, bool bJpeg );
+	 void ExtractImage( PoDoFo::PdfObject* pObject, bool bJpeg );
 
     /** This function checks wether a file with the 
      *  given filename does exist.
