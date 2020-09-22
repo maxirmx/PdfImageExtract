@@ -1,3 +1,8 @@
+/***************************************************************************
+*   Copyright (C) 2020 by Maxim Samsonov                                   *
+*   maxim@samsonov.net                                                     *
+****************************************************************************/
+
 // stdafx.h : include file for standard system include files,
 // or project specific include files that are used frequently, but
 // are changed infrequently
@@ -7,13 +12,14 @@
 
 #include "targetver.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <tchar.h>
 #include <sys/stat.h>
-#include <cstdio>
+
+#include <iostream>
+#include <iomanip>
+
+using namespace std;
 
 #include <podofo.h>
 
 
-// TODO: reference additional headers your program requires here

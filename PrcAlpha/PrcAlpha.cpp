@@ -1,5 +1,7 @@
-// PrcAlpha.cpp : Defines the entry point for the console application.
-//
+/***************************************************************************
+*   Copyright (C) 2020 by Maxim Samsonov                                   *
+*   maxim@samsonov.net                                                     *
+****************************************************************************/
 
 #include "stdafx.h"
 
@@ -29,22 +31,9 @@ int main( int argc, char* argv[] )
   pszInput  = argv[1];
   pszOutput = argv[2];
 
-
-  DWORD  dwGFA = GetFileAttributesA(pszOutput);
-
-  if (dwGFA == INVALID_FILE_ATTRIBUTES) {
-	  if (!CreateDirectoryA(pszOutput, NULL)) {
-		  fprintf(stderr, "Error: %s does not exist and CreateDirectory failed.\n\n", pszOutput);
-		  exit(-1);
-	  }
-  } else if (!(dwGFA & FILE_ATTRIBUTE_DIRECTORY)) {
-	  fprintf(stderr, "Error: %s exists but is not a directory.\n\n", pszOutput);
-	  exit(-1);
-  }
-
   try {
-  //    extractor.Init( pszInput, pszOutput, &nNum );
-	  extractor.Extract(pszInput, pszOutput);
+      extractor.Init( pszOutput );
+	  extractor.Extract(pszInput);
   } catch( PdfError & e ) {
       fprintf( stderr, "Error: An error %i ocurred during processing the pdf file.\n", e.GetError() );
       e.PrintErrorMsg();
