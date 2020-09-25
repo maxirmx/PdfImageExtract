@@ -1,28 +1,26 @@
-/***************************************************************************
-*   Copyright (C) 2020 by Maxim Samsonov                                   *
-*   maxim@samsonov.net                                                     *
-****************************************************************************/
+/******************************************************************************
+ Copyright (C) 2020 Maxim Samsonov                                      
+ maxim@samsonov.net									
 
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom 
+ the Software is furnished to do so, subject to the following conditions:
 
-/***************************************************************************
-*   Copyright (C) 2005 by Dominik Seichter                                *
-*   domseichter@web.de                                                    *
-*                                                                         *
-*   This program is free software; you can redistribute it and/or modify  *
-*   it under the terms of the GNU General Public License as published by  *
-*   the Free Software Foundation; either version 2 of the License, or     *
-*   (at your option) any later version.                                   *
-*                                                                         *
-*   This program is distributed in the hope that it will be useful,       *
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-*   GNU General Public License for more details.                          *
-*                                                                         *
-*   You should have received a copy of the GNU General Public License     *
-*   along with this program; if not, write to the                         *
-*   Free Software Foundation, Inc.,                                       *
-*   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
-***************************************************************************/
+ The above copyright notice and this permission notice shall be included 
+ in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+ DEALINGS IN THE SOFTWARE.
+
+*******************************************************************************/
 
 #include "stdafx.h"
 #include "ImageExtractor.h"
@@ -32,7 +30,7 @@
 #endif
 
 ImageExtractor::ImageExtractor()
-    : m_pszOutputDirectory( NULL ), m_nSuccess( 0 ), m_nCount( 0 )
+    : m_sOutputDirectory(), m_sInputFile(), m_nSuccess( 0 ), m_nCount( 0 )
 {
 
 }
@@ -41,14 +39,15 @@ ImageExtractor::~ImageExtractor()
 {
 }
 
-void ImageExtractor::Init(const char* pszOutput)
+void ImageExtractor::Init(const char* pszInput, const char* pszOutput)
 {
-	if (!pszOutput)
+	if (!pszOutput || !pszInput)
 	{
 		PODOFO_RAISE_ERROR(ePdfError_InvalidHandle);
 	}
 
-	m_pszOutputDirectory = const_cast<char*>(pszOutput);
+	m_sOutputDirectory = pszOutput;
+	m_sInputFile = pszInput;
 
 
 	DWORD  dwGFA = GetFileAttributesA(pszOutput);
@@ -67,10 +66,10 @@ void ImageExtractor::Init(const char* pszOutput)
 }
 
 
-void ImageExtractor::Extract(const char* pszInput)
+void ImageExtractor::Extract()
 {
 
-	PdfMemDocument document(pszInput);
+	PdfMemDocument document(m_sInputFile.c_str());
 	int nPages = document.GetPageCount();
 
 	const string kwdDo("Do");
@@ -95,6 +94,8 @@ void ImageExtractor::Extract(const char* pszInput)
 
 		string theLastNameReadable("undefined");
 		PdfVariant theLastName;
+
+		unsigned int nCount = 0;
 // --------------------------------------------------------------------------------------------------------------
 // https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf 
 // p. 201 and beyond
@@ -126,11 +127,11 @@ void ImageExtractor::Extract(const char* pszInput)
 								if (pFilter && pFilter->IsName() && (pFilter->GetName().GetName() == "DCTDecode"))
 								{
 									// The only filter is JPEG -> create a JPEG file
-									ExtractImage(pObj, true);
+									ExtractImage(pObj, true, i, nCount++);
 								}
 								else
 								{
-									ExtractImage(pObj, false);
+									ExtractImage(pObj, false, i, nCount++);
 								}
 
 								document.FreeObjectMemory(pObj);
@@ -158,23 +159,25 @@ void ImageExtractor::Extract(const char* pszInput)
 
 
 
-void ImageExtractor::ExtractImage( PdfObject* pObject, bool bJpeg )
+void ImageExtractor::ExtractImage( PdfObject* pObject, bool bJpeg, unsigned int nPage, unsigned int nCount)
 {
-    FILE*       hFile        = NULL;
-    const char* pszExtension = bJpeg ? "jpg" : "ppm"; 
+    FILE*  hFile = NULL;
+	string sFile;
+	ostringstream ssFile;
 
     // Do not overwrite existing files:
     do {
-        snprintf( m_szBuffer, MAX_PATH, "%s/pdfimage_%04i.%s", m_pszOutputDirectory, m_nCount++, pszExtension );
-    } while( FileExists( m_szBuffer ) );
+		ssFile << m_sOutputDirectory << "/image" << setw(4) << setfill('0') << nPage << "-" << nCount << "." << (bJpeg ? "jpg" : "ppm");
+		sFile = ssFile.str();
+    } while( FileExists( sFile.c_str() ) );
 
-    hFile = fopen( m_szBuffer, "wb" );  
+    hFile = fopen(sFile.c_str(), "wb" );
     if( !hFile )
     {
         PODOFO_RAISE_ERROR( ePdfError_InvalidHandle );
     }
 
-    printf("-> Writing image object %s to the file: %s\n", pObject->Reference().ToString().c_str(), m_szBuffer);
+    printf("-> Writing image object %s to the file: %s\n", pObject->Reference().ToString().c_str(), sFile.c_str());
 
     if( bJpeg ) 
     {
