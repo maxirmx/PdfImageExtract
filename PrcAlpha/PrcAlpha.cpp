@@ -28,7 +28,7 @@ DEALINGS IN THE SOFTWARE.
 
 void print_help()
 {
-  cout << "Usage: podofoimgextract [inputfile] [outputdirectory]" << endl <<
+  cout << "Usage: imgextract [inputfile] [outputdirectory]" << endl <<
           "       [outputdirectory] shall exist" << endl  << 
           "PoDoFo Version: " << PODOFO_VERSION_STRING << endl << endl;
 }
@@ -51,7 +51,7 @@ int main( int argc, char* argv[] )
   pszOutput = argv[2];
 
   try {
-      extractor.Init( pszOutput, pszInput);
+      extractor.Init( pszInput, pszOutput);
 	  extractor.Extract();
   } catch( PdfError & e ) {
 	  cerr << "Error: An error " << e.GetError() << " ocurred during processing the pdf file." << endl; 

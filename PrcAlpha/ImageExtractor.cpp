@@ -30,9 +30,8 @@
 #endif
 
 ImageExtractor::ImageExtractor()
-    : m_sOutputDirectory(), m_sInputFile(), m_nSuccess( 0 ), m_nCount( 0 )
+    : m_sOutputDirectory(), m_sInputFile(), m_nSuccess( 0 ), m_nCount( 0 ), m_sFName()
 {
-
 }
 
 ImageExtractor::~ImageExtractor()
@@ -63,6 +62,14 @@ void ImageExtractor::Init(const char* pszInput, const char* pszOutput)
 		exit(-1);
 	}
 
+	char drive[MAX_PATH];
+	char dir[MAX_PATH];
+	char name[MAX_PATH];
+	char ext[MAX_PATH];
+	_splitpath_s(m_sInputFile.c_str(), drive, MAX_PATH, dir, MAX_PATH, name, MAX_PATH, ext, MAX_PATH );
+
+	m_sFName = name;
+	
 }
 
 
@@ -162,17 +169,18 @@ void ImageExtractor::Extract()
 void ImageExtractor::ExtractImage( PdfObject* pObject, bool bJpeg, unsigned int nPage, unsigned int nCount)
 {
     FILE*  hFile = NULL;
+	errno_t err;
 	string sFile;
 	ostringstream ssFile;
 
     // Do not overwrite existing files:
     do {
-		ssFile << m_sOutputDirectory << "/image" << setw(4) << setfill('0') << nPage << "-" << nCount << "." << (bJpeg ? "jpg" : "ppm");
+		ssFile << m_sOutputDirectory << "/" << m_sFName << "-p-" << setw(3) << setfill('0') << nPage << "-i-" << setw(2) << nCount << "." << (bJpeg ? "jpg" : "ppm");
 		sFile = ssFile.str();
     } while( FileExists( sFile.c_str() ) );
 
-    hFile = fopen(sFile.c_str(), "wb" );
-    if( !hFile )
+    err = fopen_s(&hFile, sFile.c_str(), "wb" );
+    if( err )
     {
         PODOFO_RAISE_ERROR( ePdfError_InvalidHandle );
     }

@@ -68,6 +68,7 @@ class ImageExtractor {
  private:
     string   m_sOutputDirectory;
 	string   m_sInputFile;
+	string   m_sFName;
 	unsigned int m_nSuccess;
     unsigned int m_nCount;
 
