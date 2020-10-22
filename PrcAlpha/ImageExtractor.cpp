@@ -95,9 +95,6 @@ void ImageExtractor::Extract()
 		bool bReadToken;
 
 		PdfObject* pObj;
-		PdfObject* pObjType;
-		PdfObject* pObjSubType;
-		PdfObject* pFilter;
 
 		string theLastNameReadable("undefined");
 		PdfVariant theLastName;
@@ -112,38 +109,12 @@ void ImageExtractor::Extract()
 		{
 			switch (type) {
 				case ePdfContentsType_Keyword: /* The token is a PDF keyword. */
-					if (kwdDo == kwText) {
+					if (kwdDo == kwText) 
+					{
 // Debug output			cout << "Do (XObject:\"" << setw(6) << theLastNameReadable << "\")" << endl;
 						pObj = pPage->GetFromResources(nameXObject, theLastName.GetName());
-						if (pObj && pObj->IsDictionary()) {
-// Debug output				cout << "Dictionary ...";
-							pObjType = pObj->GetDictionary().GetKey(PdfName::KeyType);
-							pObjSubType = pObj->GetDictionary().GetKey(PdfName::KeySubtype);
-
-							if ((pObjType && pObjType->IsName() && (pObjType->GetName().GetName() == "XObject")) ||
-								(pObjSubType && pObjSubType->IsName() && (pObjSubType->GetName().GetName() == "Image")))
-							{
-// Debug output				    cout << " " << pObjType->GetName().GetName() << " and " << pObjSubType->GetName().GetName() << " ...";
-
-								pFilter = pObj->GetDictionary().GetKey(PdfName::KeyFilter);
-								if (pFilter && pFilter->IsArray() && pFilter->GetArray().GetSize() == 1 &&
-									pFilter->GetArray()[0].IsName() && (pFilter->GetArray()[0].GetName().GetName() == "DCTDecode"))
-									pFilter = &pFilter->GetArray()[0];
-
-
-								if (pFilter && pFilter->IsName() && (pFilter->GetName().GetName() == "DCTDecode"))
-								{
-									// The only filter is JPEG -> create a JPEG file
-									ExtractImage(pObj, true, i, nCount++);
-								}
-								else
-								{
-									ExtractImage(pObj, false, i, nCount++);
-								}
-
-								document.FreeObjectMemory(pObj);
-							}
-						}
+						ExtractObject(pObj, i, nCount++);
+						document.FreeObjectMemory(pObj);
 					}
 					break;
 				case ePdfContentsType_Variant: /* The token is a PDF variant. A variant is usually a parameter to a keyword */
@@ -165,17 +136,64 @@ void ImageExtractor::Extract()
 }
 
 
+void ImageExtractor::ExtractObject(PdfObject* pObj, unsigned int nPage, unsigned int nCount) 
+{
+	PdfObject* pObjType;
+	PdfObject* pObjSubType;
+	PdfObject* pFilter;
+
+	if (pObj && pObj->IsDictionary()) {
+		// Debug output				cout << "Dictionary ...";
+		pObjType = pObj->GetDictionary().GetKey(PdfName::KeyType);
+		pObjSubType = pObj->GetDictionary().GetKey(PdfName::KeySubtype);
+
+		if ((pObjType && pObjType->IsName() && (pObjType->GetName().GetName() == "XObject")) ||
+			(pObjSubType && pObjSubType->IsName() && (pObjSubType->GetName().GetName() == "Image")))
+		{
+			// Debug output				    cout << " " << pObjType->GetName().GetName() << " and " << pObjSubType->GetName().GetName() << " ...";
+
+			pFilter = pObj->GetDictionary().GetKey(PdfName::KeyFilter);
+			if (pFilter && pFilter->IsArray() && pFilter->GetArray().GetSize() == 1 &&
+				pFilter->GetArray()[0].IsName() && (pFilter->GetArray()[0].GetName().GetName() == "DCTDecode"))
+				pFilter = &pFilter->GetArray()[0];
+
+
+			string sFilterName = "";
+
+			if (pFilter && pFilter->IsName())
+				sFilterName = pFilter->GetName().GetName();
+
+			if (sFilterName == "DCTDecode")
+				ExtractImage(pObj, true, nPage, nCount);
+			else if (sFilterName == "FlateDecode")
+			{
+				char*    pBuffer;
+				pdf_long lLen;
+				cout << "ер ѕр";
+				pObj->GetStream()->GetFilteredCopy(&pBuffer, &lLen);
+				free(pBuffer);
+			}
+
+			else
+				ExtractImage(pObj, false, nPage, nCount);
+
+		}
+	}
+
+}
+
 
 void ImageExtractor::ExtractImage( PdfObject* pObject, bool bJpeg, unsigned int nPage, unsigned int nCount)
 {
     FILE*  hFile = NULL;
 	errno_t err;
 	string sFile;
-	ostringstream ssFile;
+	int nAttempt = 0;
 
     // Do not overwrite existing files:
     do {
-		ssFile << m_sOutputDirectory << "/" << m_sFName << "-p-" << setw(3) << setfill('0') << nPage << "-i-" << setw(2) << nCount << "." << (bJpeg ? "jpg" : "ppm");
+		ostringstream ssFile;
+		ssFile << m_sOutputDirectory << "/" << m_sFName << "-p-" << setw(3) << setfill('0') << nPage << "-i-" << setw(2) << nCount << "-a-" << setw(3) << nAttempt++ << "." << (bJpeg ? "jpg" : "ppm");
 		sFile = ssFile.str();
     } while( FileExists( sFile.c_str() ) );
 

@@ -49,13 +49,19 @@ class ImageExtractor {
     inline int GetNumImagesExtracted() const;
 
  private:
+
+	 /** Extracts the image form the given PdfObject
+	 *  \param nPage page number
+	 *  \param nCount image number in the page
+	 */
+		 void ImageExtractor::ExtractObject(PdfObject* pObject, unsigned int nPage, unsigned int nCount);
+	 
     /** Extracts the image form the given PdfObject
      *  which has to be an XObject with Subtype "Image"
      *  \param pObject a handle to a PDF object
      *  \param bJpeg if true extract as a jpeg, otherwise create a ppm
 	 *  \param nPage page number
 	 *  \param nCount image number in the page
-     *  \returns ErrOk on success
      */
 	 void ExtractImage( PoDoFo::PdfObject* pObject, bool bJpeg, unsigned int nPage, unsigned int nCount);
 
