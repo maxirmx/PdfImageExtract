@@ -95,6 +95,9 @@ void ImageExtractor::Extract()
 		bool bReadToken;
 
 		PdfObject* pObj;
+		PdfObject* pObjType;            // XoXo
+		PdfObject* pObjSubType;			// XoXo
+		PdfObject* pFilter;				// XoXo
 
 		string theLastNameReadable("undefined");
 		PdfVariant theLastName;
@@ -109,12 +112,43 @@ void ImageExtractor::Extract()
 		{
 			switch (type) {
 				case ePdfContentsType_Keyword: /* The token is a PDF keyword. */
-					if (kwdDo == kwText) 
-					{
-// Debug output			cout << "Do (XObject:\"" << setw(6) << theLastNameReadable << "\")" << endl;
+					if (kwdDo == kwText) {
+// Debug output			
+						cout << "Do (XObject:\"" << setw(6) << theLastNameReadable << "\")" << endl;
 						pObj = pPage->GetFromResources(nameXObject, theLastName.GetName());
-						ExtractObject(pObj, i, nCount++);
-						document.FreeObjectMemory(pObj);
+// XoXo -->
+						if (pObj && pObj->IsDictionary()) {
+							// Debug output				
+							cout << "Dictionary ...";
+							pObjType = pObj->GetDictionary().GetKey(PdfName::KeyType);
+							pObjSubType = pObj->GetDictionary().GetKey(PdfName::KeySubtype);
+
+							if ((pObjType && pObjType->IsName() && (pObjType->GetName().GetName() == "XObject")) ||
+								(pObjSubType && pObjSubType->IsName() && (pObjSubType->GetName().GetName() == "Image")))
+							{
+								// Debug output				    
+								cout << " " << pObjType->GetName().GetName() << " and " << pObjSubType->GetName().GetName() << " ...";
+
+								pFilter = pObj->GetDictionary().GetKey(PdfName::KeyFilter);
+								if (pFilter && pFilter->IsArray() && pFilter->GetArray().GetSize() == 1 &&
+									pFilter->GetArray()[0].IsName() && (pFilter->GetArray()[0].GetName().GetName() == "DCTDecode"))
+									pFilter = &pFilter->GetArray()[0];
+
+
+								if (pFilter && pFilter->IsName() && (pFilter->GetName().GetName() == "DCTDecode")) {
+									// The only filter is JPEG -> create a JPEG file
+									ExtractImage(pObj, true, i, nCount++);
+								}
+								else {
+									ExtractImage(pObj, false, i, nCount++);
+								}
+
+								document.FreeObjectMemory(pObj);
+							}
+						}
+// --> XoXo 
+// + XoXo						ExtractObject(pObj, i, nCount++);
+// + XoXo						document.FreeObjectMemory(pObj);
 					}
 					break;
 				case ePdfContentsType_Variant: /* The token is a PDF variant. A variant is usually a parameter to a keyword */
@@ -129,7 +163,6 @@ void ImageExtractor::Extract()
 					cout << "Raw inline image data that we do not support !!!" << endl;
 					break;
 			};
-
 		}
 	}
 	cout << "Done!" << endl;
