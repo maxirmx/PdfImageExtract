@@ -63,7 +63,7 @@ class ImageExtractor {
 	 *  \param nPage page number
 	 *  \param nCount image number in the page
      */
-	 void ExtractImage( PoDoFo::PdfObject* pObject, bool bJpeg, unsigned int nPage, unsigned int nCount);
+	 void ExtractImage( PoDoFo::PdfObject* pObject, bool bDecode, string sExt, unsigned int nPage, unsigned int nCount);
 
     /** This function checks wether a file with the 
      *  given filename does exist.

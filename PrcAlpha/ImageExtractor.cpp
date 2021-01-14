@@ -135,10 +135,13 @@ void ImageExtractor::Extract()
 								if (pFilter && pFilter->IsName())
 									sFilterName = pFilter->GetName().GetName();
 
+
 								if (sFilterName == "DCTDecode")
-									ExtractImage(pObj, true, i, nCount++);
+									ExtractImage(pObj, false, "jpg", i, nCount++);
+								if (sFilterName == "CCITTFaxDecode")
+									ExtractImage(pObj, false, "tiff", i, nCount++);
 								else if (sFilterName == "FlateDecode")
-									ExtractImage(pObj, false, i, nCount++);
+									ExtractImage(pObj, false, "ppm", i, nCount++);
 								else
 									cout << "* Filter \"" << sFilterName << "\" is not supported" << endl;
 
@@ -185,8 +188,7 @@ void ImageExtractor::ExtractObject(PdfObject* pObj, unsigned int nPage, unsigned
 			// Debug output				    cout << " " << pObjType->GetName().GetName() << " and " << pObjSubType->GetName().GetName() << " ...";
 
 			pFilter = pObj->GetDictionary().GetKey(PdfName::KeyFilter);
-			if (pFilter && pFilter->IsArray() && pFilter->GetArray().GetSize() == 1 &&
-				pFilter->GetArray()[0].IsName() && (pFilter->GetArray()[0].GetName().GetName() == "DCTDecode"))
+			if (pFilter && pFilter->IsArray() && pFilter->GetArray().GetSize() == 1 && pFilter->GetArray()[0].IsName())
 				pFilter = &pFilter->GetArray()[0];
 
 
@@ -196,11 +198,14 @@ void ImageExtractor::ExtractObject(PdfObject* pObj, unsigned int nPage, unsigned
 				sFilterName = pFilter->GetName().GetName();
 
 			if (sFilterName == "DCTDecode")
-				ExtractImage(pObj, true, nPage, nCount);
+				ExtractImage(pObj, false, "jpg", nPage, nCount);
+			if (sFilterName == "CCITTFaxDecode")
+// https://coderoad.ru/2641770/%D0%98%D0%B7%D0%B2%D0%BB%D0%B5%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B8%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F-%D0%B8%D0%B7-PDF-%D1%81-%D0%BF%D0%BE%D0%BC%D0%BE%D1%89%D1%8C%D1%8E-%D1%84%D0%B8%D0%BB%D1%8C%D1%82%D1%80%D0%B0-CCITTFaxDecode
+				ExtractImage(pObj, true, "tiff", nPage, nCount);
 			else if (sFilterName == "FlateDecode")
-				ExtractImage(pObj, false, nPage, nCount);
+				ExtractImage(pObj, true, "ppm", nPage, nCount);
 			else
-				cout << "Unknown filter: " << sFilterName;
+				cout << "* Filter \"" << sFilterName << "\" is not supported" << endl;
 
 		}
 	}
@@ -208,7 +213,7 @@ void ImageExtractor::ExtractObject(PdfObject* pObj, unsigned int nPage, unsigned
 }
 
 
-void ImageExtractor::ExtractImage( PdfObject* pObject, bool bJpeg, unsigned int nPage, unsigned int nCount)
+void ImageExtractor::ExtractImage( PdfObject* pObject, bool bDecode, string sExt, unsigned int nPage, unsigned int nCount)
 {
     FILE*  hFile = NULL;
 	errno_t err;
@@ -218,7 +223,7 @@ void ImageExtractor::ExtractImage( PdfObject* pObject, bool bJpeg, unsigned int 
     // Do not overwrite existing files:
     do {
 		ostringstream ssFile;
-		ssFile << m_sOutputDirectory << "/" << m_sFName << "-p-" << setw(3) << setfill('0') << nPage << "-i-" << setw(2) << nCount << "-a-" << setw(3) << nAttempt++ << "." << (bJpeg ? "jpg" : "ppm");
+		ssFile << m_sOutputDirectory << "/" << m_sFName << "-p-" << setw(3) << setfill('0') << nPage << "-i-" << setw(2) << nCount << "-a-" << setw(3) << nAttempt++ << "." << sExt;
 		sFile = ssFile.str();
     } while( FileExists( sFile.c_str() ) );
 
@@ -230,7 +235,7 @@ void ImageExtractor::ExtractImage( PdfObject* pObject, bool bJpeg, unsigned int 
 
     printf("-> Writing image object %s to the file: %s\n", pObject->Reference().ToString().c_str(), sFile.c_str());
 
-    if( bJpeg ) 
+    if( !bDecode ) 
     {
         PdfMemStream* pStream = dynamic_cast<PdfMemStream*>(pObject->GetStream());
         fwrite( pStream->Get(), pStream->GetLength(), sizeof(char), hFile );
