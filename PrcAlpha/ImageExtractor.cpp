@@ -113,35 +113,34 @@ void ImageExtractor::Extract()
 			switch (type) {
 				case ePdfContentsType_Keyword: /* The token is a PDF keyword. */
 					if (kwdDo == kwText) {
-// Debug output			
-						cout << "Do (XObject:\"" << setw(6) << theLastNameReadable << "\")" << endl;
+// Debug output			cout << "Do (XObject:\"" << setw(6) << theLastNameReadable << "\")" << endl;
 						pObj = pPage->GetFromResources(nameXObject, theLastName.GetName());
 // XoXo -->
 						if (pObj && pObj->IsDictionary()) {
-							// Debug output				
-							cout << "Dictionary ...";
+// Debug output				cout << "Dictionary ...";
 							pObjType = pObj->GetDictionary().GetKey(PdfName::KeyType);
 							pObjSubType = pObj->GetDictionary().GetKey(PdfName::KeySubtype);
 
 							if ((pObjType && pObjType->IsName() && (pObjType->GetName().GetName() == "XObject")) ||
 								(pObjSubType && pObjSubType->IsName() && (pObjSubType->GetName().GetName() == "Image")))
 							{
-								// Debug output				    
-								cout << " " << pObjType->GetName().GetName() << " and " << pObjSubType->GetName().GetName() << " ...";
-
+// Debug output				    cout << " " << pObjType->GetName().GetName() << " and " << pObjSubType->GetName().GetName() << " ...";
 								pFilter = pObj->GetDictionary().GetKey(PdfName::KeyFilter);
-								if (pFilter && pFilter->IsArray() && pFilter->GetArray().GetSize() == 1 &&
-									pFilter->GetArray()[0].IsName() && (pFilter->GetArray()[0].GetName().GetName() == "DCTDecode"))
+								if (pFilter && pFilter->IsArray() && pFilter->GetArray().GetSize() == 1 && pFilter->GetArray()[0].IsName())
 									pFilter = &pFilter->GetArray()[0];
 
 
-								if (pFilter && pFilter->IsName() && (pFilter->GetName().GetName() == "DCTDecode")) {
-									// The only filter is JPEG -> create a JPEG file
+								string sFilterName = "";
+
+								if (pFilter && pFilter->IsName())
+									sFilterName = pFilter->GetName().GetName();
+
+								if (sFilterName == "DCTDecode")
 									ExtractImage(pObj, true, i, nCount++);
-								}
-								else {
+								else if (sFilterName == "FlateDecode")
 									ExtractImage(pObj, false, i, nCount++);
-								}
+								else
+									cout << "* Filter \"" << sFilterName << "\" is not supported" << endl;
 
 								document.FreeObjectMemory(pObj);
 							}
@@ -160,12 +159,12 @@ void ImageExtractor::Extract()
 					}
 					break;
 				case ePdfContentsType_ImageData: /* The "token" is raw inline image data found between ID and EI tags (see PDF ref section 4.8.6) */
-					cout << "Raw inline image data that we do not support !!!" << endl;
+					cout << "* Raw inline image data is not supported." << endl;
 					break;
 			};
 		}
 	}
-	cout << "Done!" << endl;
+	cout << "Done!" << endl << flush;
 }
 
 
@@ -199,16 +198,9 @@ void ImageExtractor::ExtractObject(PdfObject* pObj, unsigned int nPage, unsigned
 			if (sFilterName == "DCTDecode")
 				ExtractImage(pObj, true, nPage, nCount);
 			else if (sFilterName == "FlateDecode")
-			{
-				char*    pBuffer;
-				pdf_long lLen;
-				cout << "ер ѕр";
-				pObj->GetStream()->GetFilteredCopy(&pBuffer, &lLen);
-				free(pBuffer);
-			}
-
-			else
 				ExtractImage(pObj, false, nPage, nCount);
+			else
+				cout << "Unknown filter: " << sFilterName;
 
 		}
 	}
@@ -252,7 +244,8 @@ void ImageExtractor::ExtractImage( PdfObject* pObject, bool bJpeg, unsigned int 
         const char* pszPpmHeader = "P6\n# Image extracted by PoDoFo\n%" PDF_FORMAT_INT64 " %" PDF_FORMAT_INT64 "\n%li\n";
         
         
-        fprintf( hFile, pszPpmHeader, 
+
+		fprintf( hFile, pszPpmHeader, 
                  pObject->GetDictionary().GetKey( PdfName("Width" ) )->GetNumber(),
                  pObject->GetDictionary().GetKey( PdfName("Height" ) )->GetNumber(),
                  255 );
