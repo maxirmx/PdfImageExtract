@@ -50,12 +50,14 @@ class ImageExtractor {
 
  private:
 
-	 /** Extracts the image form the given PdfObject
+	 /** Opens file to extract the image to
+	 *  \param sExt - extension
 	 *  \param nPage page number
 	 *  \param nCount image number in the page
 	 */
-		 void ImageExtractor::ExtractObject(PdfObject* pObject, unsigned int nPage, unsigned int nCount);
-	 
+
+	 ofstream* OpenFStream(string sExt, unsigned int nPage, unsigned int nCount);
+
     /** Extracts the image form the given PdfObject
      *  which has to be an XObject with Subtype "Image"
      *  \param pObject a handle to a PDF object

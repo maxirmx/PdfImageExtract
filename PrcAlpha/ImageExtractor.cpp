@@ -115,7 +115,6 @@ void ImageExtractor::Extract()
 					if (kwdDo == kwText) {
 // Debug output			cout << "Do (XObject:\"" << setw(6) << theLastNameReadable << "\")" << endl;
 						pObj = pPage->GetFromResources(nameXObject, theLastName.GetName());
-// XoXo -->
 						if (pObj && pObj->IsDictionary()) {
 // Debug output				cout << "Dictionary ...";
 							pObjType = pObj->GetDictionary().GetKey(PdfName::KeyType);
@@ -138,8 +137,9 @@ void ImageExtractor::Extract()
 
 								if (sFilterName == "DCTDecode")
 									ExtractImage(pObj, false, "jpg", i, nCount++);
-								if (sFilterName == "CCITTFaxDecode")
-									ExtractImage(pObj, false, "tiff", i, nCount++);
+								else if (sFilterName == "CCITTFaxDecode")
+// https://coderoad.ru/2641770/%D0%98%D0%B7%D0%B2%D0%BB%D0%B5%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B8%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F-%D0%B8%D0%B7-PDF-%D1%81-%D0%BF%D0%BE%D0%BC%D0%BE%D1%89%D1%8C%D1%8E-%D1%84%D0%B8%D0%BB%D1%8C%D1%82%D1%80%D0%B0-CCITTFaxDecode
+								ExtractImage(pObj, false, "tiff", i, nCount++);
 								else if (sFilterName == "FlateDecode")
 									ExtractImage(pObj, false, "ppm", i, nCount++);
 								else
@@ -148,9 +148,6 @@ void ImageExtractor::Extract()
 								document.FreeObjectMemory(pObj);
 							}
 						}
-// --> XoXo 
-// + XoXo						ExtractObject(pObj, i, nCount++);
-// + XoXo						document.FreeObjectMemory(pObj);
 					}
 					break;
 				case ePdfContentsType_Variant: /* The token is a PDF variant. A variant is usually a parameter to a keyword */
@@ -171,74 +168,22 @@ void ImageExtractor::Extract()
 }
 
 
-void ImageExtractor::ExtractObject(PdfObject* pObj, unsigned int nPage, unsigned int nCount) 
-{
-	PdfObject* pObjType;
-	PdfObject* pObjSubType;
-	PdfObject* pFilter;
-
-	if (pObj && pObj->IsDictionary()) {
-		// Debug output				cout << "Dictionary ...";
-		pObjType = pObj->GetDictionary().GetKey(PdfName::KeyType);
-		pObjSubType = pObj->GetDictionary().GetKey(PdfName::KeySubtype);
-
-		if ((pObjType && pObjType->IsName() && (pObjType->GetName().GetName() == "XObject")) ||
-			(pObjSubType && pObjSubType->IsName() && (pObjSubType->GetName().GetName() == "Image")))
-		{
-			// Debug output				    cout << " " << pObjType->GetName().GetName() << " and " << pObjSubType->GetName().GetName() << " ...";
-
-			pFilter = pObj->GetDictionary().GetKey(PdfName::KeyFilter);
-			if (pFilter && pFilter->IsArray() && pFilter->GetArray().GetSize() == 1 && pFilter->GetArray()[0].IsName())
-				pFilter = &pFilter->GetArray()[0];
-
-
-			string sFilterName = "";
-
-			if (pFilter && pFilter->IsName())
-				sFilterName = pFilter->GetName().GetName();
-
-			if (sFilterName == "DCTDecode")
-				ExtractImage(pObj, false, "jpg", nPage, nCount);
-			if (sFilterName == "CCITTFaxDecode")
-// https://coderoad.ru/2641770/%D0%98%D0%B7%D0%B2%D0%BB%D0%B5%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B8%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F-%D0%B8%D0%B7-PDF-%D1%81-%D0%BF%D0%BE%D0%BC%D0%BE%D1%89%D1%8C%D1%8E-%D1%84%D0%B8%D0%BB%D1%8C%D1%82%D1%80%D0%B0-CCITTFaxDecode
-				ExtractImage(pObj, true, "tiff", nPage, nCount);
-			else if (sFilterName == "FlateDecode")
-				ExtractImage(pObj, true, "ppm", nPage, nCount);
-			else
-				cout << "* Filter \"" << sFilterName << "\" is not supported" << endl;
-
-		}
-	}
-
-}
-
-
 void ImageExtractor::ExtractImage( PdfObject* pObject, bool bDecode, string sExt, unsigned int nPage, unsigned int nCount)
 {
-    FILE*  hFile = NULL;
-	errno_t err;
-	string sFile;
-	int nAttempt = 0;
-
-    // Do not overwrite existing files:
-    do {
-		ostringstream ssFile;
-		ssFile << m_sOutputDirectory << "/" << m_sFName << "-p-" << setw(3) << setfill('0') << nPage << "-i-" << setw(2) << nCount << "-a-" << setw(3) << nAttempt++ << "." << sExt;
-		sFile = ssFile.str();
-    } while( FileExists( sFile.c_str() ) );
-
-    err = fopen_s(&hFile, sFile.c_str(), "wb" );
-    if( err )
-    {
+	ofstream* pFStream = NULL;
+	try 
+	{
+		pFStream = OpenFStream(sExt, nPage, nCount);
+	}
+	catch (...)  
+	{
         PODOFO_RAISE_ERROR( ePdfError_InvalidHandle );
     }
-
-    printf("-> Writing image object %s to the file: %s\n", pObject->Reference().ToString().c_str(), sFile.c_str());
 
     if( !bDecode ) 
     {
         PdfMemStream* pStream = dynamic_cast<PdfMemStream*>(pObject->GetStream());
-        fwrite( pStream->Get(), pStream->GetLength(), sizeof(char), hFile );
+        pFStream->write(pStream->Get(), pStream->GetLength());
     }
     else
     {
@@ -250,7 +195,7 @@ void ImageExtractor::ExtractImage( PdfObject* pObject, bool bDecode, string sExt
         
         
 
-		fprintf( hFile, pszPpmHeader, 
+/*		fprintf( hFile, pszPpmHeader, 
                  pObject->GetDictionary().GetKey( PdfName("Width" ) )->GetNumber(),
                  pObject->GetDictionary().GetKey( PdfName("Height" ) )->GetNumber(),
                  255 );
@@ -260,12 +205,30 @@ void ImageExtractor::ExtractImage( PdfObject* pObject, bool bDecode, string sExt
         pObject->GetStream()->GetFilteredCopy( &pBuffer, &lLen );
         fwrite( pBuffer, lLen, sizeof(char), hFile );
         free( pBuffer );
+		*/
     }
 
-    fclose( hFile );
+	delete pFStream;
 
     ++m_nSuccess;
 }
+
+
+ofstream* ImageExtractor::OpenFStream(string sExt, unsigned int nPage, unsigned int nCount)
+{
+	string sFile;
+	int nAttempt = 0;
+
+	// Do not overwrite existing files:
+	do {
+		ostringstream ssFile;
+		ssFile << m_sOutputDirectory << "/" << m_sFName << "-p-" << setw(3) << setfill('0') << nPage << "-i-" << setw(2) << nCount << "-a-" << setw(3) << nAttempt++ << "." << sExt;
+		sFile = ssFile.str();
+	} while (FileExists(sFile.c_str()));
+
+	return new ofstream(sFile, ios_base::binary);
+}
+
 
 bool ImageExtractor::FileExists( const char* pszFilename )
 {
